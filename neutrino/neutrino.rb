@@ -20,17 +20,30 @@ apps_directory = config[:apps_dir]
 thread_count   = config[:threads]
 transpose_value = config[:transpose]
 webhook_url    = config[:webhook]
-model_map      = config[:model_map]
+# model_map      = config[:model_map]
 
 # 曲名
 song_name = ARGV[0] or abort("Usage: ruby neutrino.rb SONG_NAME")
+# song = ARGV[0]
+
+# model_mapの受け取り
+model_map = JSON.parse(ARGV[1]) rescue {}
+config[:model_map] = model_map unless model_map.empty?
+
+# partsの受け取り
+parts = model_map.keys
+abort("No parts selected") if parts.empty?
+
+# 進捗バー用
+total_parts = parts.size
+current_part_index = 0
 
 # ログ取り用
 log_file_path = ApplicationLogger.create_log_file
 
-# 進捗バー用
-total_parts = model_map.keys.size
-current_part_index = 0
+# # 進捗バー用
+# total_parts = model_map.keys.size
+# current_part_index = 0
 
 # スペルチェック
 SpellChecker.check_song_folder(apps_directory, song_name)

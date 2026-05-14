@@ -1,0 +1,14 @@
+# フォルダごと除外
+
+projects/
+config/
+
+# 拡張子ごと除外
+
+*.<拡張子>
+*.log
+
+# 独立してリポジトリ化
+
+config.rb
+config.json

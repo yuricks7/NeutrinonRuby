@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "rexml/document"
+require_relative "configuration_loader" # 定数の設定
 require_relative "path_converter"
 
 ##
@@ -104,5 +106,80 @@ module SpellChecker
 
       abort(message)
     end
+  end
+
+  ##
+  # パスの末尾の`\`を削除する
+  #
+  # @param path [String] xmlを格納しているフォルダのパス
+  #
+  # @return [String] 変換後の文字列
+  #
+  def self.normalize_win_path(path)
+    path.gsub(/\\+$/, "")  # 末尾の`\`を全部削除
+  end
+
+  ##
+  # パスをWSLで使える書式に変換する
+  #
+  # @param win_path [String] xmlを格納しているフォルダのパス
+  #
+  # @return [String] 変換後の文字列
+  #
+  def self.to_wsl_path(win_path)
+    # 1) 末尾の \ または / を削除
+    win_path = win_path.gsub(/[\\\/]+$/, "")
+
+    # 2) "C:\" → "C:" にする
+    win_path = win_path.gsub(/:\\+/, ":")
+
+    # 3) ドライブ名を取得
+    drive = win_path[0].downcase
+
+    # 4) "C:\neutrino\Apps" → "neutrino/Apps"
+    rest = win_path[2..].gsub("\\", "/")
+
+    # 5) 最終的な WSL パス
+    "/mnt/#{drive}/#{rest}"
+  end
+
+  # WSLパスでMusicXMLの場所を作る
+  config = ConfigurationLoader.load
+  apps_directory = SpellChecker.normalize_win_path(config[:apps_dir])
+  apps_dir_wsl   = SpellChecker.to_wsl_path(apps_directory)
+  SCORE_MUSICXML_DIR = File.join(apps_dir_wsl, "score", "musicxml")
+
+  ##
+  # 歌詞の入力ミスを検知する
+  #
+  # @param song_name [String]
+  #
+  # @return [[]]
+  #
+  def self.extract_lyrics(song_name)
+    dir = File.join(SCORE_MUSICXML_DIR, song_name)
+
+    unless Dir.exist?(dir)
+      raise "MusicXML directory not found: #{dir}"
+    end
+
+    # LyricTest-*.musicxml を全部拾う
+    xml_files = Dir.glob(File.join(dir, "#{song_name}-*.musicxml"))
+
+    if xml_files.empty?
+      raise "No part MusicXML files found in #{dir}"
+    end
+
+    lyrics = []
+
+    xml_files.each do |xml_path|
+      xml = REXML::Document.new(File.read(xml_path, encoding: "UTF-8"))
+
+      REXML::XPath.each(xml, "//lyric/text") do |node|
+        lyrics << node.text
+      end
+    end
+
+    lyrics
   end
 end

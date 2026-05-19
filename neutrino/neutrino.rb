@@ -23,16 +23,16 @@ webhook_url    = config[:webhook]
 
 # 曲名
 song_name = ARGV[0] or abort("Usage: ruby neutrino.rb SONG_NAME")
-# song = ARGV[0]
 
 # partsの受け取り
 parts = JSON.parse(ARGV[1]) rescue []
-# parts = model_map.keys
 abort("No parts selected") if parts.empty?
 
 # model_mapの受け取り
 model_map = JSON.parse(ARGV[2]) rescue {}
 config[:model_map] = model_map unless model_map.empty?
+
+SEPARATOR_LINE = "========"
 
 # 進捗バー用
 total_parts = parts.size
@@ -71,7 +71,7 @@ parts.each do |part_name|
   base_name = "#{song_name}-#{part_name}"
 
   puts "\n" if parts.length > 1
-  ApplicationLogger.write("=== #{base_name} ===", log_file_path)
+  ApplicationLogger.write("#{SEPARATOR_LINE} #{base_name} #{SEPARATOR_LINE}", log_file_path)
   puts "\n[#{current_part_index}/#{total_parts}] #{part_name}"
 
   # MusicXMLtoLabel
@@ -82,7 +82,7 @@ lyrics = SpellChecker.extract_lyrics(song_name)  # 既存の SpellChecker を利
 invalid = validate_lyrics(lyrics)
 
 if invalid.any?
-  puts "=== Invalid Lyrics Detected ==="
+  puts "#{SEPARATOR_LINE} Invalid Lyrics Detected #{SEPARATOR_LINE}"
   invalid.each do |err|
     puts "Measure #{err[:measure]}: #{err[:text]}"
   end
@@ -110,4 +110,6 @@ end
 end
 
 SlackNotifier.notify(webhook_url, "NEUTRINO 完了: #{song_name}")
-ApplicationLogger.write("=== Slack 投稿完了 ===", log_file_path)
+
+puts "\n"
+ApplicationLogger.write("#{SEPARATOR_LINE} Slack 投稿完了 #{SEPARATOR_LINE}", log_file_path)

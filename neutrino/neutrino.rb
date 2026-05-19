@@ -20,19 +20,19 @@ apps_directory = config[:apps_dir]
 thread_count   = config[:threads]
 transpose_value = config[:transpose]
 webhook_url    = config[:webhook]
-# model_map      = config[:model_map]
 
 # 曲名
 song_name = ARGV[0] or abort("Usage: ruby neutrino.rb SONG_NAME")
 # song = ARGV[0]
 
-# model_mapの受け取り
-model_map = JSON.parse(ARGV[1]) rescue {}
-config[:model_map] = model_map unless model_map.empty?
-
 # partsの受け取り
-parts = model_map.keys
+parts = JSON.parse(ARGV[1]) rescue []
+# parts = model_map.keys
 abort("No parts selected") if parts.empty?
+
+# model_mapの受け取り
+model_map = JSON.parse(ARGV[2]) rescue {}
+config[:model_map] = model_map unless model_map.empty?
 
 # 進捗バー用
 total_parts = parts.size
@@ -64,10 +64,13 @@ SpellChecker.check_musicxml_files(apps_directory, song_name, model_map.keys)
 FolderInitializer.ensure_song_folders(apps_directory, song_name)
 
 # 各パート処理
-model_map.each do |part_name, model_name|
+parts.each do |part_name|
+  model_name = model_map[part_name]
+
   current_part_index += 1
   base_name = "#{song_name}-#{part_name}"
 
+  puts "\n" if parts.length > 1
   ApplicationLogger.write("=== #{base_name} ===", log_file_path)
   puts "\n[#{current_part_index}/#{total_parts}] #{part_name}"
 

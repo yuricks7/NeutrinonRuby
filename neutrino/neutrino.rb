@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "lib/configuration_loader"
 require_relative "lib/application_logger"
 require_relative "lib/path_converter"
 require_relative "lib/folder_initializer"
@@ -8,30 +7,25 @@ require_relative "lib/spell_checker"
 require_relative "lib/command_builder"
 require_relative "lib/slack_notifier"
 require_relative "lib/windows_executor"
-# require_relative "lib/progress_bar"
 
 ## ==============================
 # NEUTRINO 自動生成メインスクリプト
 # ===============================
 
 # 基本設定
-config = ConfigurationLoader.load
-apps_directory = config[:apps_dir]
-thread_count   = config[:threads]
-transpose_value = config[:transpose]
-webhook_url    = config[:webhook]
-
-# 曲名
 song_name = ARGV[0] or abort("Usage: ruby neutrino.rb SONG_NAME")
-
-# partsの受け取り
-parts = JSON.parse(ARGV[1]) rescue []
-abort("No parts selected") if parts.empty?
-
-# model_mapの受け取り
+parts     = JSON.parse(ARGV[1]) rescue []
 model_map = JSON.parse(ARGV[2]) rescue {}
-config[:model_map] = model_map unless model_map.empty?
+config    = JSON.parse(ARGV[3]) rescue {}
 
+apps_directory     = config["paths"]["apps_directory"]
+root_wsl_directory = config["paths"]["root_wsl_directory"]
+
+threads   = config["neutrino"]["threads"]
+transpose = config["neutrino"]["transpose"]
+webhook   = config["neutrino"]["webhook"]
+
+# ログ出力用
 SEPARATOR_LINE = "========"
 
 # 進捗バー用
@@ -97,13 +91,13 @@ end
   # NEUTRINO
   puts "\n- NEUTRINO -"
   WindowsExecutor.execute(
-    CommandBuilder.build_neutrino_command(apps_directory, song_name, base_name, model_name, thread_count, transpose_value),
+    CommandBuilder.build_neutrino_command(apps_directory, song_name, base_name, model_name, threads, transpose),
     apps_directory,
     ->(msg) { ApplicationLogger.write(msg, log_file_path) }
   )
 end
 
-SlackNotifier.notify(webhook_url, "NEUTRINO 完了: #{song_name}")
+SlackNotifier.notify(webhook, "NEUTRINO完了: #{song_name}")
 
 puts "\n"
 ApplicationLogger.write("#{SEPARATOR_LINE} Slack 投稿完了 #{SEPARATOR_LINE}", log_file_path)

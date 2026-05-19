@@ -8,7 +8,7 @@ require_relative "lib/spell_checker"
 require_relative "lib/command_builder"
 require_relative "lib/slack_notifier"
 require_relative "lib/windows_executor"
-require_relative "lib/progress_bar"
+# require_relative "lib/progress_bar"
 
 ## ==============================
 # NEUTRINO 自動生成メインスクリプト
@@ -75,8 +75,7 @@ parts.each do |part_name|
   puts "\n[#{current_part_index}/#{total_parts}] #{part_name}"
 
   # MusicXMLtoLabel
-  print "  - MusicXMLtoLabel   "
-  ProgressBar.render(0, 1)
+  puts "- MusicXMLtoLabel -"
 
 lyrics = SpellChecker.extract_lyrics(song_name)  # 既存の SpellChecker を利用
 invalid = validate_lyrics(lyrics)
@@ -94,19 +93,14 @@ end
     apps_directory,
     ->(msg) { ApplicationLogger.write(msg, log_file_path) }
   )
-  ProgressBar.render(1, 1)
-  ProgressBar.finish
 
   # NEUTRINO
-  print "  - NEUTRINO          "
-  ProgressBar.render(0, 1)
+  puts "\n- NEUTRINO -"
   WindowsExecutor.execute(
     CommandBuilder.build_neutrino_command(apps_directory, song_name, base_name, model_name, thread_count, transpose_value),
     apps_directory,
     ->(msg) { ApplicationLogger.write(msg, log_file_path) }
   )
-  ProgressBar.render(1, 1)
-  ProgressBar.finish
 end
 
 SlackNotifier.notify(webhook_url, "NEUTRINO 完了: #{song_name}")
